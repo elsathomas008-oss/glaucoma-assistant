@@ -1,0 +1,26 @@
+Fundus Image + Patient Notes
+             ↓
+       Input Validation
+             ↓
+    Gemini 3.5 Flash-Lite
+       Preprocessing
+             ↓
+     ┌───────┴────────┐
+     ↓                ↓
+Clinical Data     Fundus Image
+Extraction              ↓
+     ↓          Gemini 3.8 Flash
+     │          Vision Assessment
+     │                ↓
+     └───────┬────────┘
+             ↓
+     Multimodal Fusion
+             ↓
+    Gemini 3.5 Flash
+ Reasoning + Explanation
+             ↓
+    Evidence Grounding
+             ↓
+Findings + Region + Score
+             ↓
+      Clinician Review

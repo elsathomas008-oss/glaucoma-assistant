@@ -1,0 +1,20 @@
+Scope Note 
+
+
+Implemented in the current prototype
+Fundus-image upload and analysis
+Image-quality checking
+Patient-note integration
+Three-model Gemini architecture
+Multimodal reasoning
+Relevant-region highlighting
+Evidence-grounded explanations
+Output confidence/model score
+Clinician-in-the-loop review
+Stretch goals / future work
+Pixel-level optic-disc/cup segmentation
+Automated C/D-ratio measurement
+Calibrated uncertainty
+Longitudinal progression analysis
+Validation on additional datasets
+Cross-camera and cross-population evaluation
