@@ -1,0 +1,197 @@
+EVIDENCE & EXPLANATION
+======================
+
+Project:           Glaucoma Second Opinion
+Team:              Elixir
+Hackathon:         HackNex 26
+Problem statement: HNX26PSI05, Multimodal Medical Image Intelligence
+
+NOTE: Research prototype. Not a medical device. All patient notes are synthetic.
+
+
+1. PURPOSE
+----------
+This document shows how the system reaches each assessment, so a clinician can
+check the result instead of trusting a black box. Every finding is tied to a
+source: a region of the fundus image or a line of the patient notes. A finding
+with neither source is treated as a hallucination and is flagged or removed.
+
+
+2. EVIDENCE THE SYSTEM PRODUCES
+-------------------------------
+- Highlighted region
+    What:  Heatmap over the optic nerve head showing where the image finding
+           comes from
+    Where: UI, image panel
+
+- Cited findings
+    What:  Each finding points to an image region [image: ...] or a line of
+           the patient notes [notes: ...]
+    Where: UI, findings list
+
+- Confidence score
+    What:  Probability for the assessment ( 95% , 85% etc. )
+    Where: UI, header of the result
+
+- Intermediate outputs
+    What:  Fields extracted from the notes, then image findings, then the
+           final assessment
+    Where: <path to logs or debug view>
+
+- Grounding check
+    What:  A finding with no image region and no note citation is flagged as
+           unsupported
+    Where: <file that implements the check>
+
+- Timestamp
+    What:  When the analysis ran, saved with each output
+    Where: <log file or output field>
+
+- Model used
+    What:  Which Gemini model produced each step
+    Where: <log or output field>
+
+
+3. WORKED EXAMPLE
+-----------------
+
+3.1 Input
+
+Image: HACKNEX/GLAUCOMA/drishtiGS_002.png (colour fundus photograph, right eye)
+
+Patient notes (synthetic, SYN-001):
+
+  62-year-old male, right eye imaged. Presenting: occasional missed objects on
+  one side; no pain. Systemic history: hypertension and type 2 diabetes. Family
+  history of glaucoma: No. Current medication: newly diagnosed,
+  treatment-naive. Exam: IOP 30 mmHg (Goldmann); central corneal thickness
+  539 um; narrow on gonioscopy (Shaffer grade 1-2). OCT: average RNFL
+  thickness 76 um. Humphrey 24-2: MD -14.6 dB, PSD 7.7 dB; arcuate scotoma.
+
+3.2 Pipeline (intermediate outputs)
+
+  Step 1. Input check
+    What happens: Image and notes are received and validated
+    Output:       <e.g. image OK, notes parsed>
+
+  Step 2. Notes extraction
+    What happens: Key clinical values are pulled from the notes
+    Output:       IOP 30 mmHg, CCT 539 um, RNFL 76 um, MD -14.6 dB,
+                  arcuate scotoma
+
+  Step 3. Image analysis
+    What happens: Optic nerve head is examined and the region is highlighted
+    Output:       <e.g. enlarged cup, thinned superior rim>
+
+  Step 4. Reasoning
+    What happens: Image and notes findings are combined
+    Output:       <summary of reasoning>
+
+  Step 5. Grounding check
+    What happens: Each finding is checked for a source
+    Output:       <n supported, n removed>
+
+  Step 6. Output
+    What happens: Assessment, confidence and cited findings are shown to the
+                  doctor
+    Output:       See 3.3
+
+3.3 Output (replace with the real output of one run)
+
+  Assessment:  <glaucoma / normal>      Confidence: <0.xx>
+  Timestamp:   <YYYY-MM-DD HH:MM:SS>
+  Model:       <model ID>
+
+  Doctor, consider these findings:
+
+  1. <image finding, e.g. enlarged optic cup with thinned superior rim>
+     Source: [image: highlighted optic nerve region]
+
+  2. <clinical finding, e.g. raised intraocular pressure>
+     Source: [notes: "IOP 30 mmHg (Goldmann)"]
+
+  3. <clinical finding, e.g. visual field loss consistent with the disc>
+     Source: [notes: "Humphrey 24-2: MD -14.6 dB, PSD 7.7 dB; arcuate scotoma"]
+
+  Unsupported statements removed: <number, or "none">
+
+Screenshot of this run: docs/sample_output.png
+
+
+4. HOW TO READ THE OUTPUT
+-------------------------
+- Heatmap: warm areas mark the part of the image that most influenced the
+  result. It shows where the model looked, not proof of cause.
+- Source tags: the clinician can verify each finding against the image or the
+  exact note line.
+- Confidence score: a probabilistic score, not a diagnosis. A low score should
+  prompt human review.
+- Normal vs glaucoma cues: a healthy disc has a small cup and a pink, thick
+  rim. In glaucoma the cup is enlarged and the rim is thin and pale.
+
+
+5. LIMITS OF THE EVIDENCE
+-------------------------
+- The patient notes are synthetic and written to match each image's label, so
+  they are not clinical ground truth and may make results look better than
+  they would be on real records.
+- A fundus photograph alone cannot confirm glaucoma. Diagnosis also needs IOP,
+  visual fields, OCT and a clinical examination.
+- The heatmap shows model focus and does not prove that the highlighted area
+  caused the result.
+- The dataset is small (101 images, binary labels).
+
+
+# Evaluation
+
+The prototype is evaluated using the **Drishti-GS dataset**, with the documented 101-image split:
+
+| Split     |   Total | Glaucoma | Normal |
+| --------- | ------: | -------: | -----: |
+| Training  |      50 |       32 |     18 |
+| Testing   |      51 |       38 |     13 |
+| **Total** | **101** |   **70** | **31** |
+
+
+
+### Evaluation Metrics
+
+| Metric                    |       Image Only |    Image + Notes |
+| ------------------------- | ---------------: | ---------------: |
+| **Accuracy**              | `[actual value]` | `[actual value]` |
+| **Sensitivity**           | `[actual value]` | `[actual value]` |
+| **Specificity**           | `[actual value]` | `[actual value]` |
+| **Grounded-finding rate** | `[actual value]` | `[actual value]` |
+
+### What each metric means
+
+**Accuracy**
+Measures the overall proportion of correctly classified cases.
+
+**Sensitivity**
+Measures how effectively the system identifies glaucoma-labelled cases.
+
+**Specificity**
+Measures how effectively the system identifies normal cases.
+
+**Grounded-finding rate**
+Measures the proportion of generated findings that can be linked to a valid image region or relevant patient-note evidence.
+
+### Image-only vs Multimodal Evaluation
+
+We compare two settings:
+
+```text
+                 TEST IMAGE
+                     │
+          ┌──────────┴──────────┐
+          ↓                     ↓
+     Image Only          Image + Patient Notes
+          ↓                     ↓
+      Prediction           Prediction
+          └──────────┬──────────┘
+                     ↓
+             Compare Metrics
+```
+
+This demonstrates whether adding clinical context changes the system's output.
